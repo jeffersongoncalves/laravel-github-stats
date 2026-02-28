@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.3...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.2.0...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.2.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.3...v1.2.0) - 2026-02-28
+
+### New Feature
+
+#### Private Repository Stats
+
+- **Stats card**: `restrictedContributionsCount` is now added to total commits, ensuring contributions to private repos are counted
+- **Streak card**: `restrictedContributionsCount` is now queried per year and added to the total contributions count
+- Requires GitHub token with `repo` scope to access private repo data (see config: `github-stats.token`)
+
+#### Also includes (from v1.1.x patches)
+
+- Fix: CSS animation `transform` no longer overrides SVG positioning in stats and streak cards
+- Fix: Trophies SVG `fill-opacity` attribute escaping
 
 ## [v1.1.3](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.2...v1.1.3) - 2026-02-28
 
