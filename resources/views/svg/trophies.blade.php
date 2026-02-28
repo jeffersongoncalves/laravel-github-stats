@@ -1,5 +1,20 @@
 @php
-  $trophyColors = [
+  // Detect dark theme by calculating bg luminance
+  $bgHex = $theme['bg'];
+  $r = hexdec(substr($bgHex, 0, 2));
+  $g = hexdec(substr($bgHex, 2, 2));
+  $b = hexdec(substr($bgHex, 4, 2));
+  $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+  $isDark = $luminance < 0.5;
+
+  $trophyColors = $isDark ? [
+    'S'    => ['bg' => 'ffd700', 'border' => 'ffc107', 'text' => 'ffd700'],
+    'A'    => ['bg' => 'c0c0c0', 'border' => 'a0a0a0', 'text' => 'c0c0c0'],
+    'B'    => ['bg' => 'cd7f32', 'border' => 'b87333', 'text' => 'cd7f32'],
+    'C'    => ['bg' => 'e8e8e8', 'border' => 'cccccc', 'text' => 'b0b0b0'],
+    'D'    => ['bg' => 'f0f0f0', 'border' => 'dddddd', 'text' => '999999'],
+    'none' => ['bg' => 'f5f5f5', 'border' => 'eeeeee', 'text' => '777777'],
+  ] : [
     'S'    => ['bg' => 'ffd700', 'border' => 'ffc107', 'text' => '6d5300'],
     'A'    => ['bg' => 'c0c0c0', 'border' => 'a0a0a0', 'text' => '404040'],
     'B'    => ['bg' => 'cd7f32', 'border' => 'b87333', 'text' => '4a2f0e'],
@@ -8,27 +23,33 @@
     'none' => ['bg' => 'f5f5f5', 'border' => 'eeeeee', 'text' => 'aaaaaa'],
   ];
 
-  $cols = min(count($trophies), 4);
+  $cols = $columns ?? min(count($trophies), 4);
   $rows = (int) ceil(count($trophies) / $cols);
   $trophyWidth = 120;
   $trophyHeight = 120;
   $gap = 10;
   $totalWidth = $cols * $trophyWidth + ($cols - 1) * $gap + 20;
   $totalHeight = $rows * $trophyHeight + ($rows - 1) * $gap + 20;
+
+  $noFrame = $no_frame ?? false;
+  $noBg = $no_bg ?? false;
+
+  $iconOpacity = $isDark ? '0.6' : '0.3';
+  $iconFillColor = $isDark ? $theme['icon'] : null;
 @endphp
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="{{ $totalWidth }}" height="{{ $totalHeight }}" viewBox="0 0 {{ $totalWidth }} {{ $totalHeight }}" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
-    .trophy-title { font: 600 11px 'Segoe UI', Ubuntu, Sans-Serif; }
-    .trophy-level { font: 700 24px 'Segoe UI', Ubuntu, Sans-Serif; }
-    .trophy-value { font: 400 10px 'Segoe UI', Ubuntu, Sans-Serif; }
-    .trophy-icon { opacity: 0.3; }
+    .trophy-title { font: 600 12px 'Segoe UI', Ubuntu, Sans-Serif; }
+    .trophy-level { font: 700 26px 'Segoe UI', Ubuntu, Sans-Serif; }
+    .trophy-value { font: 400 11px 'Segoe UI', Ubuntu, Sans-Serif; }
+    .trophy-icon { opacity: {{ $iconOpacity }}; }
   </style>
 
   @unless($hide_border)
-  <rect x="0.5" y="0.5" rx="4.5" width="{{ $totalWidth - 1 }}" height="{{ $totalHeight - 1 }}" fill="#{{ $theme['bg'] }}" stroke="#{{ $theme['border'] }}" stroke-opacity="1"/>
+  <rect x="0.5" y="0.5" rx="4.5" width="{{ $totalWidth - 1 }}" height="{{ $totalHeight - 1 }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" {{ $noBg ? 'fill-opacity="0"' : '' }} stroke="#{{ $theme['border'] }}" stroke-opacity="1"/>
   @else
-  <rect x="0" y="0" rx="4.5" width="{{ $totalWidth }}" height="{{ $totalHeight }}" fill="#{{ $theme['bg'] }}" stroke="none"/>
+  <rect x="0" y="0" rx="4.5" width="{{ $totalWidth }}" height="{{ $totalHeight }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" {{ $noBg ? 'fill-opacity="0"' : '' }} stroke="none"/>
   @endunless
 
   @foreach($trophies as $i => $trophy)
@@ -38,14 +59,18 @@
     $x = 10 + $col * ($trophyWidth + $gap);
     $y = 10 + $row * ($trophyHeight + $gap);
     $tc = $trophyColors[$trophy['level']] ?? $trophyColors['none'];
+    $cardStroke = $noFrame ? 'none' : '#' . $tc['border'];
+    $cardFill = $noBg ? 'transparent' : '#' . $tc['bg'];
+    $cardFillOpacity = $noBg ? '0' : '0.15';
+    $trophyIconColor = $iconFillColor ?? $tc['text'];
   @endphp
   <g transform="translate({{ $x }}, {{ $y }})">
     {{-- Trophy card background --}}
-    <rect x="0" y="0" rx="4" width="{{ $trophyWidth }}" height="{{ $trophyHeight }}" fill="#{{ $tc['bg'] }}" fill-opacity="0.15" stroke="#{{ $tc['border'] }}" stroke-opacity="0.5"/>
+    <rect x="0" y="0" rx="4" width="{{ $trophyWidth }}" height="{{ $trophyHeight }}" fill="{{ $cardFill }}" fill-opacity="{{ $cardFillOpacity }}" stroke="{{ $cardStroke }}" stroke-opacity="0.5"/>
 
     {{-- Trophy icon --}}
     <g class="trophy-icon" transform="translate({{ $trophyWidth / 2 - 15 }}, 15)">
-      <svg width="30" height="30" viewBox="0 0 16 16" fill="#{{ $tc['text'] }}">
+      <svg width="30" height="30" viewBox="0 0 16 16" fill="#{{ $trophyIconColor }}">
         @switch($trophy['icon'])
           @case('star')
             <path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/>

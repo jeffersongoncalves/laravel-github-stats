@@ -100,11 +100,14 @@ class StatsController extends Controller
     {
         $theme = $this->resolveTheme($request);
         $hideBorder = $this->resolveHideBorder($request);
+        $columns = $this->resolveTrophyColumns($request);
+        $noFrame = $this->resolveBooleanParam($request, 'no_frame');
+        $noBg = $this->resolveBooleanParam($request, 'no_bg');
         $cacheKey = $this->buildSvgCacheKey('trophies', $request);
 
         $svgTtl = config('github-stats.cache.svg_ttl', 3600);
 
-        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
+        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder, $columns, $noFrame, $noBg) {
             $trophies = $this->github->getTrophies();
 
             /** @var view-string $view */
@@ -114,6 +117,9 @@ class StatsController extends Controller
                 'theme' => $theme,
                 'hide_border' => $hideBorder,
                 'trophies' => $trophies,
+                'columns' => $columns,
+                'no_frame' => $noFrame,
+                'no_bg' => $noBg,
             ])->render();
         });
 
@@ -154,9 +160,27 @@ class StatsController extends Controller
         );
     }
 
+    protected function resolveTrophyColumns(Request $request): ?int
+    {
+        $column = $request->get('column');
+        if ($column === null) {
+            return null;
+        }
+
+        return max(1, min(10, (int) $column));
+    }
+
+    protected function resolveBooleanParam(Request $request, string $param): bool
+    {
+        return filter_var($request->get($param, false), FILTER_VALIDATE_BOOLEAN);
+    }
+
     protected function buildSvgCacheKey(string $card, Request $request): string
     {
-        $params = $request->only(['theme', 'bg_color', 'title_color', 'text_color', 'icon_color', 'border_color', 'hide_border']);
+        $params = $request->only([
+            'theme', 'bg_color', 'title_color', 'text_color', 'icon_color', 'border_color',
+            'hide_border', 'column', 'no_frame', 'no_bg',
+        ]);
         $hash = md5(serialize($params));
 
         return "github:svg:{$card}:{$hash}";

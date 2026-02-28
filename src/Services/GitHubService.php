@@ -2,6 +2,7 @@
 
 namespace JeffersonGoncalves\GitHubStats\Services;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -32,7 +33,7 @@ class GitHubService
     }
 
     /**
-     * @return array{name: string, login: string, avatar_url: string, followers: int, following: int, total_repos: int, repos: array<int, array<string, mixed>>, contributions: array<string, mixed>}
+     * @return array{name: string, login: string, avatar_url: string, followers: int, following: int, total_repos: int, repos: array<int, array<string, mixed>>, contributions: array<string, mixed>, created_at: string|null}
      */
     public function fetchUserData(): array
     {
@@ -49,6 +50,7 @@ class GitHubService
                 name
                 login
                 avatarUrl
+                createdAt
                 followers { totalCount }
                 following { totalCount }
                 repositories(
@@ -134,6 +136,7 @@ class GitHubService
             'total_repos' => $userData['repositories']['totalCount'] ?? 0,
             'repos' => $allRepos,
             'contributions' => $userData['contributionsCollection'] ?? [],
+            'created_at' => $userData['createdAt'] ?? null,
         ];
     }
 
@@ -231,26 +234,95 @@ class GitHubService
     }
 
     /**
-     * @return array{current_streak: int, longest_streak: int, total_contributions: int, current_streak_start: string|null, current_streak_end: string|null, longest_streak_start: string|null, longest_streak_end: string|null}
+     * Fetch contribution data for all years since user creation.
+     *
+     * @return array{days: array<int, array{date: string, contributionCount: int}>, total_contributions: int, created_at: string|null}
      */
-    public function getStreak(): array
+    public function fetchAllTimeContributions(): array
     {
-        return Cache::remember('github:streak', $this->dataTtl, function () {
-            $userData = $this->fetchUserData();
+        $userData = $this->fetchUserData();
+        $createdAt = $userData['created_at'];
 
-            $weeks = $userData['contributions']['contributionCalendar']['weeks'] ?? [];
-            $days = [];
+        $startYear = $createdAt ? Carbon::parse($createdAt)->year : Carbon::now()->year;
+        $currentYear = Carbon::now()->year;
 
-            foreach ($weeks as $week) {
+        $allDays = [];
+        $totalContributions = 0;
+
+        for ($year = $startYear; $year <= $currentYear; $year++) {
+            $from = "{$year}-01-01T00:00:00Z";
+            $to = "{$year}-12-31T23:59:59Z";
+
+            $query = <<<GRAPHQL
+            query {
+              user(login: "{$this->username}") {
+                contributionsCollection(from: "{$from}", to: "{$to}") {
+                  contributionCalendar {
+                    totalContributions
+                    weeks {
+                      contributionDays {
+                        contributionCount
+                        date
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            GRAPHQL;
+
+            $response = Http::withToken($this->token)
+                ->post($this->graphqlUrl, ['query' => $query]);
+
+            if ($response->failed()) {
+                Log::warning('GitHub GraphQL API (year contributions) failed', [
+                    'year' => $year,
+                    'status' => $response->status(),
+                ]);
+
+                continue;
+            }
+
+            $collection = $response->json('data.user.contributionsCollection');
+            if ($collection === null) {
+                continue;
+            }
+
+            $totalContributions += $collection['contributionCalendar']['totalContributions'] ?? 0;
+
+            foreach ($collection['contributionCalendar']['weeks'] ?? [] as $week) {
                 foreach ($week['contributionDays'] ?? [] as $day) {
-                    $days[] = [
+                    $allDays[$day['date']] = [
                         'date' => $day['date'],
                         'contributionCount' => $day['contributionCount'],
                     ];
                 }
             }
+        }
 
-            return $this->streakCalculator->calculate($days);
+        // Sort by date
+        ksort($allDays);
+
+        return [
+            'days' => array_values($allDays),
+            'total_contributions' => $totalContributions,
+            'created_at' => $createdAt,
+        ];
+    }
+
+    /**
+     * @return array{current_streak: int, longest_streak: int, total_contributions: int, current_streak_start: string|null, current_streak_end: string|null, longest_streak_start: string|null, longest_streak_end: string|null, created_at: string|null}
+     */
+    public function getStreak(): array
+    {
+        return Cache::remember('github:streak', $this->dataTtl, function () {
+            $allTime = $this->fetchAllTimeContributions();
+
+            $result = $this->streakCalculator->calculate($allTime['days']);
+            $result['total_contributions'] = $allTime['total_contributions'];
+            $result['created_at'] = $allTime['created_at'];
+
+            return $result;
         });
     }
 

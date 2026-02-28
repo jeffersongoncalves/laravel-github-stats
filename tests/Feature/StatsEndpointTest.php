@@ -2,67 +2,101 @@
 
 use Illuminate\Support\Facades\Http;
 
-beforeEach(function () {
-    Http::fake([
-        'api.github.com/graphql' => Http::response([
-            'data' => [
-                'user' => [
-                    'name' => 'Test User',
-                    'login' => 'testuser',
-                    'avatarUrl' => 'https://github.com/testuser.png',
-                    'followers' => ['totalCount' => 42],
-                    'following' => ['totalCount' => 10],
-                    'repositories' => [
-                        'totalCount' => 15,
-                        'nodes' => [
-                            [
-                                'name' => 'repo-1',
-                                'stargazerCount' => 100,
-                                'forkCount' => 20,
-                                'primaryLanguage' => ['name' => 'PHP', 'color' => '#4F5D95'],
-                                'languages' => [
-                                    'edges' => [
-                                        ['size' => 50000, 'node' => ['name' => 'PHP', 'color' => '#4F5D95']],
-                                        ['size' => 10000, 'node' => ['name' => 'Blade', 'color' => '#f7523f']],
-                                    ],
-                                ],
-                            ],
-                            [
-                                'name' => 'repo-2',
-                                'stargazerCount' => 50,
-                                'forkCount' => 5,
-                                'primaryLanguage' => ['name' => 'JavaScript', 'color' => '#f1e05a'],
-                                'languages' => [
-                                    'edges' => [
-                                        ['size' => 30000, 'node' => ['name' => 'JavaScript', 'color' => '#f1e05a']],
-                                    ],
+function fakeGraphQLResponse(array $overrides = []): array
+{
+    return array_merge_recursive([
+        'data' => [
+            'user' => [
+                'name' => 'Test User',
+                'login' => 'testuser',
+                'avatarUrl' => 'https://github.com/testuser.png',
+                'createdAt' => '2026-01-01T00:00:00Z',
+                'followers' => ['totalCount' => 42],
+                'following' => ['totalCount' => 10],
+                'repositories' => [
+                    'totalCount' => 15,
+                    'nodes' => [
+                        [
+                            'name' => 'repo-1',
+                            'stargazerCount' => 100,
+                            'forkCount' => 20,
+                            'primaryLanguage' => ['name' => 'PHP', 'color' => '#4F5D95'],
+                            'languages' => [
+                                'edges' => [
+                                    ['size' => 50000, 'node' => ['name' => 'PHP', 'color' => '#4F5D95']],
+                                    ['size' => 10000, 'node' => ['name' => 'Blade', 'color' => '#f7523f']],
                                 ],
                             ],
                         ],
-                        'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
+                        [
+                            'name' => 'repo-2',
+                            'stargazerCount' => 50,
+                            'forkCount' => 5,
+                            'primaryLanguage' => ['name' => 'JavaScript', 'color' => '#f1e05a'],
+                            'languages' => [
+                                'edges' => [
+                                    ['size' => 30000, 'node' => ['name' => 'JavaScript', 'color' => '#f1e05a']],
+                                ],
+                            ],
+                        ],
                     ],
-                    'contributionsCollection' => [
-                        'totalCommitContributions' => 500,
-                        'totalIssueContributions' => 30,
-                        'totalPullRequestContributions' => 80,
-                        'totalPullRequestReviewContributions' => 25,
-                        'restrictedContributionsCount' => 0,
-                        'contributionCalendar' => [
-                            'totalContributions' => 635,
-                            'weeks' => [
-                                [
-                                    'contributionDays' => [
-                                        ['date' => '2026-02-25', 'contributionCount' => 5],
-                                        ['date' => '2026-02-26', 'contributionCount' => 3],
-                                        ['date' => '2026-02-27', 'contributionCount' => 7],
-                                    ],
+                    'pageInfo' => ['hasNextPage' => false, 'endCursor' => null],
+                ],
+                'contributionsCollection' => [
+                    'totalCommitContributions' => 500,
+                    'totalIssueContributions' => 30,
+                    'totalPullRequestContributions' => 80,
+                    'totalPullRequestReviewContributions' => 25,
+                    'restrictedContributionsCount' => 0,
+                    'contributionCalendar' => [
+                        'totalContributions' => 635,
+                        'weeks' => [
+                            [
+                                'contributionDays' => [
+                                    ['date' => '2026-02-25', 'contributionCount' => 5],
+                                    ['date' => '2026-02-26', 'contributionCount' => 3],
+                                    ['date' => '2026-02-27', 'contributionCount' => 7],
                                 ],
                             ],
                         ],
                     ],
                 ],
             ],
-        ]),
+        ],
+    ], $overrides);
+}
+
+function fakeYearContributionResponse(): array
+{
+    return [
+        'data' => [
+            'user' => [
+                'contributionsCollection' => [
+                    'contributionCalendar' => [
+                        'totalContributions' => 635,
+                        'weeks' => [
+                            [
+                                'contributionDays' => [
+                                    ['date' => '2026-02-25', 'contributionCount' => 5],
+                                    ['date' => '2026-02-26', 'contributionCount' => 3],
+                                    ['date' => '2026-02-27', 'contributionCount' => 7],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ];
+}
+
+beforeEach(function () {
+    Http::fake([
+        'api.github.com/graphql' => Http::sequence()
+            ->push(fakeGraphQLResponse())  // fetchUserData
+            ->push(fakeYearContributionResponse())  // fetchAllTimeContributions year query
+            ->push(fakeGraphQLResponse())  // any additional fetchUserData calls
+            ->push(fakeYearContributionResponse()),  // any additional year queries
         'api.github.com/search/commits*' => Http::response([
             'total_count' => 1234,
         ]),
@@ -103,6 +137,16 @@ it('returns streak as SVG', function () {
         ->toContain('Current Streak');
 });
 
+it('returns streak with created_at date', function () {
+    $response = $this->get('/api/streak');
+
+    $response->assertOk();
+
+    expect($response->getContent())
+        ->toContain('Jan 1, 2026')
+        ->toContain('Present');
+});
+
 it('returns trophies as SVG', function () {
     $response = $this->get('/api/trophies');
 
@@ -138,4 +182,31 @@ it('includes ETag header', function () {
     $response->assertOk();
 
     expect($response->headers->get('ETag'))->not->toBeNull();
+});
+
+it('accepts column parameter for trophies', function () {
+    $response = $this->get('/api/trophies?column=3');
+
+    $response->assertOk();
+
+    expect($response->getContent())
+        ->toContain('<svg');
+});
+
+it('accepts no_frame parameter for trophies', function () {
+    $response = $this->get('/api/trophies?no_frame=true');
+
+    $response->assertOk();
+
+    expect($response->getContent())
+        ->toContain('stroke="none"');
+});
+
+it('accepts no_bg parameter for trophies', function () {
+    $response = $this->get('/api/trophies?no_bg=true');
+
+    $response->assertOk();
+
+    expect($response->getContent())
+        ->toContain('fill-opacity="0"');
 });
