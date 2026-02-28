@@ -27,7 +27,10 @@ class StatsController extends Controller
         $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
             $stats = $this->github->getStats();
 
-            return view('github-stats::svg.stats', [
+            /** @var view-string $view */
+            $view = 'github-stats::svg.stats';
+
+            return view($view, [
                 'theme' => $theme,
                 'hide_border' => $hideBorder,
                 'title' => $stats['name'],
@@ -55,7 +58,10 @@ class StatsController extends Controller
         $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
             $languages = $this->github->getLanguages();
 
-            return view('github-stats::svg.top-langs', [
+            /** @var view-string $view */
+            $view = 'github-stats::svg.top-langs';
+
+            return view($view, [
                 'theme' => $theme,
                 'hide_border' => $hideBorder,
                 'languages' => $languages,
@@ -77,7 +83,10 @@ class StatsController extends Controller
         $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
             $streak = $this->github->getStreak();
 
-            return view('github-stats::svg.streak', [
+            /** @var view-string $view */
+            $view = 'github-stats::svg.streak';
+
+            return view($view, [
                 'theme' => $theme,
                 'hide_border' => $hideBorder,
                 'streak' => $streak,
@@ -98,7 +107,10 @@ class StatsController extends Controller
         $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
             $trophies = $this->github->getTrophies();
 
-            return view('github-stats::svg.trophies', [
+            /** @var view-string $view */
+            $view = 'github-stats::svg.trophies';
+
+            return view($view, [
                 'theme' => $theme,
                 'hide_border' => $hideBorder,
                 'trophies' => $trophies,
