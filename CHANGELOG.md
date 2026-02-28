@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.1...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.2...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.1.2](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.1...v1.1.2) - 2026-02-28
+
+### Bug Fix
+
+- **Streak card**: Fixed all sections rendering in the upper-left corner. CSS `transform: translateY()` in the fade-in animation was overriding the SVG `transform` attribute, resetting all group positions to (0,0). Animation now only animates `opacity`.
 
 ## [v1.1.1](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.0...v1.1.1) - 2026-02-28
 
