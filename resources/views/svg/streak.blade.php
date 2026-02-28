@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="495" height="195" viewBox="0 0 495 195" fill="none" xmlns="http://www.w3.org/2000/svg">
   <style>
-    .title { font: 600 18px 'Segoe UI', Ubuntu, Sans-Serif; fill: #{{ $theme['title'] }}; }
     .stat-title { font: 400 12px 'Segoe UI', Ubuntu, Sans-Serif; fill: #{{ $theme['text'] }}; }
     .stat-value { font: 700 28px 'Segoe UI', Ubuntu, Sans-Serif; fill: #{{ $theme['title'] }}; }
     .stat-value-current { font: 700 28px 'Segoe UI', Ubuntu, Sans-Serif; fill: #{{ $theme['icon'] }}; }
@@ -43,16 +42,16 @@
   <g transform="translate(247.5, 48)" class="section-2">
     <text class="stat-title" text-anchor="middle" x="0" y="0">Current Streak</text>
 
-    {{-- Fire icon above ring --}}
-    <svg class="fire" x="-8" y="6" width="16" height="16" viewBox="0 0 16 16">
+    {{-- Fire icon (small, above ring) --}}
+    <svg class="fire" x="-6" y="8" width="12" height="12" viewBox="0 0 16 16">
       <path d="M7.998 14.5c2.832 0 5-1.98 5-4.5 0-1.463-.68-2.19-1.879-3.383l-.036-.037C9.865 5.343 8.66 4.088 8.198 1.5 6.698 4 6.698 5 5.998 6c-.7 1-2 1.5-2 3.5 0 2.52 1.637 5 4 5z"/>
     </svg>
 
     {{-- Ring around current streak number --}}
-    <circle class="streak-ring" cx="0" cy="44" r="22"/>
-    <text class="stat-value-current" text-anchor="middle" x="0" y="52">{{ number_format($streak['current_streak']) }}</text>
+    <circle class="streak-ring" cx="0" cy="32" r="16"/>
+    <text class="stat-value-current" text-anchor="middle" x="0" y="40">{{ number_format($streak['current_streak']) }}</text>
 
-    <text class="stat-date" text-anchor="middle" x="0" y="78">
+    <text class="stat-date" text-anchor="middle" x="0" y="58">
       @if($streak['current_streak_start'] && $streak['current_streak_end'])
         {{ \Carbon\Carbon::parse($streak['current_streak_start'])->format('M j, Y') }} - {{ \Carbon\Carbon::parse($streak['current_streak_end'])->format('M j, Y') }}
       @else

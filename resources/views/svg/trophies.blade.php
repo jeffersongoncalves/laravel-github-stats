@@ -47,9 +47,9 @@
   </style>
 
   @unless($hide_border)
-  <rect x="0.5" y="0.5" rx="4.5" width="{{ $totalWidth - 1 }}" height="{{ $totalHeight - 1 }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" {{ $noBg ? 'fill-opacity="0"' : '' }} stroke="#{{ $theme['border'] }}" stroke-opacity="1"/>
+  <rect x="0.5" y="0.5" rx="4.5" width="{{ $totalWidth - 1 }}" height="{{ $totalHeight - 1 }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" fill-opacity="{{ $noBg ? '0' : '1' }}" stroke="#{{ $theme['border'] }}" stroke-opacity="1"/>
   @else
-  <rect x="0" y="0" rx="4.5" width="{{ $totalWidth }}" height="{{ $totalHeight }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" {{ $noBg ? 'fill-opacity="0"' : '' }} stroke="none"/>
+  <rect x="0" y="0" rx="4.5" width="{{ $totalWidth }}" height="{{ $totalHeight }}" fill="{{ $noBg ? 'transparent' : '#' . $theme['bg'] }}" fill-opacity="{{ $noBg ? '0' : '1' }}" stroke="none"/>
   @endunless
 
   @foreach($trophies as $i => $trophy)
