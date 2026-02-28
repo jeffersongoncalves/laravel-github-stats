@@ -6,6 +6,13 @@
 
 # Laravel GitHub Stats
 
+[![Tests](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/tests.yml/badge.svg)](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/tests.yml)
+[![PHPStan](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/phpstan.yml/badge.svg)](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/phpstan.yml)
+[![Pint](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/pint.yml/badge.svg)](https://github.com/jeffersongoncalves/laravel-github-stats/actions/workflows/pint.yml)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/jeffersongoncalves/laravel-github-stats.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-github-stats)
+[![Total Downloads](https://img.shields.io/packagist/dt/jeffersongoncalves/laravel-github-stats.svg?style=flat-square)](https://packagist.org/packages/jeffersongoncalves/laravel-github-stats)
+[![License](https://img.shields.io/packagist/l/jeffersongoncalves/laravel-github-stats.svg?style=flat-square)](LICENSE)
+
 Self-hosted Laravel package that serves dynamic SVG cards with your GitHub statistics. Replace unreliable third-party services (github-readme-stats, streak-stats, github-profile-trophy) with your own private service.
 
 ## Features
