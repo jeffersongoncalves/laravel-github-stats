@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.0...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.1...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.1.1](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.0...v1.1.1) - 2026-02-28
+
+### Bug Fixes
+
+- **Streak card**: Fixed positioning of ring and fire icon overlapping with other sections. Reduced ring size and aligned all three sections to the same vertical rhythm.
+- **Trophies card**: Fixed SVG parse error caused by Blade escaping quotes in `fill-opacity` attribute. The `no_bg` parameter now works correctly.
 
 ## [v1.1.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.0.0...v1.1.0) - 2026-02-28
 
