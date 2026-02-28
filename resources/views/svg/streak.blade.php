@@ -10,8 +10,8 @@
     .streak-ring { fill: none; stroke: #{{ $theme['icon'] }}; stroke-width: 3; stroke-opacity: 0.4; }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     .section-1 { animation: fadeIn 0.4s ease forwards; }
     .section-2 { animation: fadeIn 0.4s ease 0.15s forwards; opacity: 0; }
