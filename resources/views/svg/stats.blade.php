@@ -6,8 +6,8 @@
     .stat-value { font: 700 14px 'Segoe UI', Ubuntu, Sans-Serif; fill: #{{ $theme['text'] }}; }
     .icon { fill: #{{ $theme['icon'] }}; }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(-5px); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     .stat-row { animation: fadeIn 0.3s ease-in-out forwards; opacity: 0; }
   </style>
