@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.2...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.3...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.1.3](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.2...v1.1.3) - 2026-02-28
+
+### Bug Fix
+
+- **Stats card**: Fixed all stat rows rendering in the upper-left corner. Same CSS `transform` animation issue as the streak card (fixed in v1.1.2) — CSS `transform: translateX()` was overriding the SVG `transform` attribute on each stat row.
 
 ## [v1.1.2](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.1.1...v1.1.2) - 2026-02-28
 
