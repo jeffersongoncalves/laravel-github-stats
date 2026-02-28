@@ -177,11 +177,12 @@ class GitHubService
             }
 
             $contributions = $userData['contributions'];
+            $restricted = $contributions['restrictedContributionsCount'] ?? 0;
 
             return [
                 'name' => $userData['name'],
                 'total_stars' => $totalStars,
-                'total_commits' => $allTimeCommits ?: ($contributions['totalCommitContributions'] ?? 0),
+                'total_commits' => ($allTimeCommits ?: ($contributions['totalCommitContributions'] ?? 0)) + $restricted,
                 'total_prs' => $contributions['totalPullRequestContributions'] ?? 0,
                 'total_issues' => $contributions['totalIssueContributions'] ?? 0,
                 'total_reviews' => $contributions['totalPullRequestReviewContributions'] ?? 0,
@@ -257,6 +258,7 @@ class GitHubService
             query {
               user(login: "{$this->username}") {
                 contributionsCollection(from: "{$from}", to: "{$to}") {
+                  restrictedContributionsCount
                   contributionCalendar {
                     totalContributions
                     weeks {
@@ -289,6 +291,7 @@ class GitHubService
             }
 
             $totalContributions += $collection['contributionCalendar']['totalContributions'] ?? 0;
+            $totalContributions += $collection['restrictedContributionsCount'] ?? 0;
 
             foreach ($collection['contributionCalendar']['weeks'] ?? [] as $week) {
                 foreach ($week['contributionDays'] ?? [] as $day) {

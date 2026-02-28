@@ -72,6 +72,7 @@ function fakeYearContributionResponse(): array
         'data' => [
             'user' => [
                 'contributionsCollection' => [
+                    'restrictedContributionsCount' => 0,
                     'contributionCalendar' => [
                         'totalContributions' => 635,
                         'weeks' => [
