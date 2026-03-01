@@ -6,7 +6,7 @@ use JeffersonGoncalves\GitHubStats\Http\Controllers\StatsController;
 Route::group([
     'prefix' => config('github-stats.route_prefix', 'api'),
     'middleware' => array_merge(
-        ['github-stats.lock-username'],
+        ['throttle:github-stats', 'github-stats.lock-username'],
         config('github-stats.middleware', []),
     ),
 ], function () {
