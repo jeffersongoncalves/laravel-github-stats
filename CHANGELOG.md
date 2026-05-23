@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.3.0...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.4.0...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.4.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.3.0...v1.4.0) - 2026-05-23
+
+### What's Changed\n- feat: add Laravel 13 support\n- Auto-generated changelog will follow.
 
 ## [v1.3.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.2.0...v1.3.0) - 2026-03-01
 
