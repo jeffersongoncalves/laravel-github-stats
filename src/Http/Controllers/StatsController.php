@@ -2,6 +2,7 @@
 
 namespace JeffersonGoncalves\GitHubStats\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
@@ -126,7 +127,7 @@ class StatsController extends Controller
         return $this->svgResponse($svg);
     }
 
-    public function health(): \Illuminate\Http\JsonResponse
+    public function health(): JsonResponse
     {
         return response()->json([
             'status' => 'ok',

@@ -4,6 +4,7 @@ namespace JeffersonGoncalves\GitHubStats;
 
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\RateLimiter;
 use JeffersonGoncalves\GitHubStats\Commands\RefreshGitHubStatsCommand;
 use JeffersonGoncalves\GitHubStats\Http\Middleware\LockUsername;
@@ -42,7 +43,7 @@ class GitHubStatsServiceProvider extends PackageServiceProvider
     {
         $this->configureRateLimiting();
 
-        /** @var \Illuminate\Routing\Router $router */
+        /** @var Router $router */
         $router = $this->app->make('router');
         $router->aliasMiddleware('github-stats.lock-username', LockUsername::class);
     }
