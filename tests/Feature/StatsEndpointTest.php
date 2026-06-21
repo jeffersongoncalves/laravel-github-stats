@@ -72,6 +72,7 @@ function fakeYearContributionResponse(): array
         'data' => [
             'user' => [
                 'contributionsCollection' => [
+                    'totalCommitContributions' => 500,
                     'restrictedContributionsCount' => 0,
                     'contributionCalendar' => [
                         'totalContributions' => 635,
@@ -92,15 +93,17 @@ function fakeYearContributionResponse(): array
 }
 
 beforeEach(function () {
+    // Resolve the right payload by inspecting the GraphQL query, so the test is
+    // independent of how many times (and in what order) each query runs.
     Http::fake([
-        'api.github.com/graphql' => Http::sequence()
-            ->push(fakeGraphQLResponse())  // fetchUserData
-            ->push(fakeYearContributionResponse())  // fetchAllTimeContributions year query
-            ->push(fakeGraphQLResponse())  // any additional fetchUserData calls
-            ->push(fakeYearContributionResponse()),  // any additional year queries
-        'api.github.com/search/commits*' => Http::response([
-            'total_count' => 1234,
-        ]),
+        'api.github.com/graphql' => function ($request) {
+            $query = $request->data()['query'] ?? '';
+
+            // fetchUserData() is the only query that pulls repositories.
+            return str_contains($query, 'repositories(')
+                ? Http::response(fakeGraphQLResponse())
+                : Http::response(fakeYearContributionResponse());
+        },
     ]);
 });
 

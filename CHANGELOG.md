@@ -5,7 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.4.1...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.5.0...HEAD)
+
+## [1.5.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.4.1...v1.5.0) - 2026-06-21
+
+### Fixed
+
+- All-time commit count now includes private (restricted) contributions across every year since the account was created. Previously only the trailing 12 months of private commits were counted, so historical private commits were missing from the total.
+
+### Changed
+
+- `fetchAllTimeCommits()` now derives the total from GitHub's GraphQL `contributionsCollection` (summing `totalCommitContributions` + `restrictedContributionsCount` per year) instead of the deprecated REST commit-search `cloak-preview` endpoint.
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 

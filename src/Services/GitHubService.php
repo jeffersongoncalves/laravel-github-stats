@@ -140,26 +140,59 @@ class GitHubService
         ];
     }
 
-    public function fetchAllTimeCommits(): int
+    /**
+     * Count all-time commit contributions, including private (restricted) ones.
+     *
+     * GitHub's GraphQL contributionsCollection is limited to a one-year window,
+     * so we sum every year since the account was created. Public commits come
+     * from totalCommitContributions and private ones from restrictedContributionsCount.
+     */
+    public function fetchAllTimeCommits(?string $createdAt = null): int
     {
-        $response = Http::withToken($this->token)
-            ->withHeaders([
-                'Accept' => 'application/vnd.github.cloak-preview+json',
-            ])
-            ->get("{$this->restUrl}/search/commits", [
-                'q' => "author:{$this->username}",
-                'per_page' => 1,
-            ]);
+        $createdAt ??= $this->fetchUserData()['created_at'];
 
-        if ($response->failed()) {
-            Log::warning('GitHub REST API (all-time commits) failed', [
-                'status' => $response->status(),
-            ]);
+        $startYear = $createdAt ? Carbon::parse($createdAt)->year : Carbon::now()->year;
+        $currentYear = Carbon::now()->year;
 
-            return 0;
+        $totalCommits = 0;
+
+        for ($year = $startYear; $year <= $currentYear; $year++) {
+            $from = "{$year}-01-01T00:00:00Z";
+            $to = "{$year}-12-31T23:59:59Z";
+
+            $query = <<<GRAPHQL
+            query {
+              user(login: "{$this->username}") {
+                contributionsCollection(from: "{$from}", to: "{$to}") {
+                  totalCommitContributions
+                  restrictedContributionsCount
+                }
+              }
+            }
+            GRAPHQL;
+
+            $response = Http::withToken($this->token)
+                ->post($this->graphqlUrl, ['query' => $query]);
+
+            if ($response->failed()) {
+                Log::warning('GitHub GraphQL API (all-time commits) failed', [
+                    'year' => $year,
+                    'status' => $response->status(),
+                ]);
+
+                continue;
+            }
+
+            $collection = $response->json('data.user.contributionsCollection');
+            if ($collection === null) {
+                continue;
+            }
+
+            $totalCommits += $collection['totalCommitContributions'] ?? 0;
+            $totalCommits += $collection['restrictedContributionsCount'] ?? 0;
         }
 
-        return $response->json('total_count', 0);
+        return $totalCommits;
     }
 
     /**
@@ -169,7 +202,7 @@ class GitHubService
     {
         return Cache::remember('github:user_stats', $this->dataTtl, function () {
             $userData = $this->fetchUserData();
-            $allTimeCommits = $this->fetchAllTimeCommits();
+            $allTimeCommits = $this->fetchAllTimeCommits($userData['created_at']);
 
             $totalStars = 0;
             foreach ($userData['repos'] as $repo) {
@@ -177,12 +210,11 @@ class GitHubService
             }
 
             $contributions = $userData['contributions'];
-            $restricted = $contributions['restrictedContributionsCount'] ?? 0;
 
             return [
                 'name' => $userData['name'],
                 'total_stars' => $totalStars,
-                'total_commits' => ($allTimeCommits ?: ($contributions['totalCommitContributions'] ?? 0)) + $restricted,
+                'total_commits' => $allTimeCommits ?: ($contributions['totalCommitContributions'] ?? 0),
                 'total_prs' => $contributions['totalPullRequestContributions'] ?? 0,
                 'total_issues' => $contributions['totalIssueContributions'] ?? 0,
                 'total_reviews' => $contributions['totalPullRequestReviewContributions'] ?? 0,
