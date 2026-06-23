@@ -23,9 +23,7 @@ class StatsController extends Controller
         $hideBorder = $this->resolveHideBorder($request);
         $cacheKey = $this->buildSvgCacheKey('stats', $request);
 
-        $svgTtl = config('github-stats.cache.svg_ttl', 3600);
-
-        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
+        $svg = $this->github->rememberSvg($cacheKey, function () use ($theme, $hideBorder) {
             $stats = $this->github->getStats();
 
             /** @var view-string $view */
@@ -54,9 +52,7 @@ class StatsController extends Controller
         $hideBorder = $this->resolveHideBorder($request);
         $cacheKey = $this->buildSvgCacheKey('langs', $request);
 
-        $svgTtl = config('github-stats.cache.svg_ttl', 3600);
-
-        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
+        $svg = $this->github->rememberSvg($cacheKey, function () use ($theme, $hideBorder) {
             $languages = $this->github->getLanguages();
 
             /** @var view-string $view */
@@ -79,9 +75,7 @@ class StatsController extends Controller
         $hideBorder = $this->resolveHideBorder($request);
         $cacheKey = $this->buildSvgCacheKey('streak', $request);
 
-        $svgTtl = config('github-stats.cache.svg_ttl', 3600);
-
-        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder) {
+        $svg = $this->github->rememberSvg($cacheKey, function () use ($theme, $hideBorder) {
             $streak = $this->github->getStreak();
 
             /** @var view-string $view */
@@ -106,9 +100,7 @@ class StatsController extends Controller
         $noBg = $this->resolveBooleanParam($request, 'no_bg');
         $cacheKey = $this->buildSvgCacheKey('trophies', $request);
 
-        $svgTtl = config('github-stats.cache.svg_ttl', 3600);
-
-        $svg = Cache::remember($cacheKey, $svgTtl, function () use ($theme, $hideBorder, $columns, $noFrame, $noBg) {
+        $svg = $this->github->rememberSvg($cacheKey, function () use ($theme, $hideBorder, $columns, $noFrame, $noBg) {
             $trophies = $this->github->getTrophies();
 
             /** @var view-string $view */

@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Log;
 
 class GitHubService
 {
+    /**
+     * Cache key holding the index of every generated SVG cache key, so the
+     * whole SVG cache can be invalidated regardless of the request parameters
+     * (and their md5 hash) that produced each entry.
+     */
+    public const SVG_INDEX_KEY = 'github:svg:keys';
+
     protected string $username;
 
     protected string $token;
@@ -20,6 +27,14 @@ class GitHubService
     protected int $dataTtl;
 
     protected int $svgTtl;
+
+    /**
+     * Request-scoped memoization of the user payload, which is otherwise fetched
+     * once per stats/languages/streak builder on a cold cache.
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $userData = null;
 
     public function __construct(
         protected StreakCalculator $streakCalculator,
@@ -37,65 +52,73 @@ class GitHubService
      */
     public function fetchUserData(): array
     {
+        if ($this->userData !== null) {
+            return $this->userData;
+        }
+
         $allRepos = [];
         $cursor = null;
         $userData = null;
 
-        do {
-            $afterClause = $cursor ? ', after: "'.$cursor.'"' : '';
-
-            $query = <<<GRAPHQL
-            query {
-              user(login: "{$this->username}") {
+        $query = <<<'GRAPHQL'
+        query ($login: String!, $cursor: String) {
+          user(login: $login) {
+            name
+            login
+            avatarUrl
+            createdAt
+            followers { totalCount }
+            following { totalCount }
+            repositories(
+              first: 100
+              ownerAffiliations: OWNER
+              orderBy: { field: STARGAZERS, direction: DESC }
+              after: $cursor
+            ) {
+              totalCount
+              nodes {
                 name
-                login
-                avatarUrl
-                createdAt
-                followers { totalCount }
-                following { totalCount }
-                repositories(
-                  first: 100
-                  ownerAffiliations: OWNER
-                  orderBy: { field: STARGAZERS, direction: DESC }
-                  {$afterClause}
-                ) {
-                  totalCount
-                  nodes {
-                    name
-                    stargazerCount
-                    forkCount
-                    primaryLanguage { name color }
-                    languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
-                      edges {
-                        size
-                        node { name color }
-                      }
-                    }
+                stargazerCount
+                forkCount
+                primaryLanguage { name color }
+                languages(first: 10, orderBy: { field: SIZE, direction: DESC }) {
+                  edges {
+                    size
+                    node { name color }
                   }
-                  pageInfo { hasNextPage endCursor }
                 }
-                contributionsCollection {
-                  totalCommitContributions
-                  totalIssueContributions
-                  totalPullRequestContributions
-                  totalPullRequestReviewContributions
-                  restrictedContributionsCount
-                  contributionCalendar {
-                    totalContributions
-                    weeks {
-                      contributionDays {
-                        contributionCount
-                        date
-                      }
-                    }
+              }
+              pageInfo { hasNextPage endCursor }
+            }
+            contributionsCollection {
+              totalCommitContributions
+              totalIssueContributions
+              totalPullRequestContributions
+              totalPullRequestReviewContributions
+              restrictedContributionsCount
+              contributionCalendar {
+                totalContributions
+                weeks {
+                  contributionDays {
+                    contributionCount
+                    date
                   }
                 }
               }
             }
-            GRAPHQL;
+          }
+        }
+        GRAPHQL;
 
+        do {
             $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, ['query' => $query]);
+                ->post($this->graphqlUrl, [
+                    'query' => $query,
+                    'variables' => [
+                        'login' => $this->username,
+                        'cursor' => $cursor,
+                    ],
+                ]);
 
             if ($response->failed()) {
                 Log::error('GitHub GraphQL API request failed', [
@@ -127,7 +150,7 @@ class GitHubService
             $cursor = $pageInfo['endCursor'] ?? null;
         } while ($hasNextPage && $cursor);
 
-        return [
+        return $this->userData = [
             'name' => $userData['name'] ?? $userData['login'],
             'login' => $userData['login'],
             'avatar_url' => $userData['avatarUrl'],
@@ -156,23 +179,27 @@ class GitHubService
 
         $totalCommits = 0;
 
-        for ($year = $startYear; $year <= $currentYear; $year++) {
-            $from = "{$year}-01-01T00:00:00Z";
-            $to = "{$year}-12-31T23:59:59Z";
-
-            $query = <<<GRAPHQL
-            query {
-              user(login: "{$this->username}") {
-                contributionsCollection(from: "{$from}", to: "{$to}") {
-                  totalCommitContributions
-                  restrictedContributionsCount
-                }
-              }
+        $query = <<<'GRAPHQL'
+        query ($login: String!, $from: DateTime!, $to: DateTime!) {
+          user(login: $login) {
+            contributionsCollection(from: $from, to: $to) {
+              totalCommitContributions
+              restrictedContributionsCount
             }
-            GRAPHQL;
+          }
+        }
+        GRAPHQL;
 
+        for ($year = $startYear; $year <= $currentYear; $year++) {
             $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, ['query' => $query]);
+                ->post($this->graphqlUrl, [
+                    'query' => $query,
+                    'variables' => [
+                        'login' => $this->username,
+                        'from' => "{$year}-01-01T00:00:00Z",
+                        'to' => "{$year}-12-31T23:59:59Z",
+                    ],
+                ]);
 
             if ($response->failed()) {
                 Log::warning('GitHub GraphQL API (all-time commits) failed', [
@@ -282,31 +309,35 @@ class GitHubService
         $allDays = [];
         $totalContributions = 0;
 
-        for ($year = $startYear; $year <= $currentYear; $year++) {
-            $from = "{$year}-01-01T00:00:00Z";
-            $to = "{$year}-12-31T23:59:59Z";
-
-            $query = <<<GRAPHQL
-            query {
-              user(login: "{$this->username}") {
-                contributionsCollection(from: "{$from}", to: "{$to}") {
-                  restrictedContributionsCount
-                  contributionCalendar {
-                    totalContributions
-                    weeks {
-                      contributionDays {
-                        contributionCount
-                        date
-                      }
-                    }
+        $query = <<<'GRAPHQL'
+        query ($login: String!, $from: DateTime!, $to: DateTime!) {
+          user(login: $login) {
+            contributionsCollection(from: $from, to: $to) {
+              restrictedContributionsCount
+              contributionCalendar {
+                totalContributions
+                weeks {
+                  contributionDays {
+                    contributionCount
+                    date
                   }
                 }
               }
             }
-            GRAPHQL;
+          }
+        }
+        GRAPHQL;
 
+        for ($year = $startYear; $year <= $currentYear; $year++) {
             $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, ['query' => $query]);
+                ->post($this->graphqlUrl, [
+                    'query' => $query,
+                    'variables' => [
+                        'login' => $this->username,
+                        'from' => "{$year}-01-01T00:00:00Z",
+                        'to' => "{$year}-12-31T23:59:59Z",
+                    ],
+                ]);
 
             if ($response->failed()) {
                 Log::warning('GitHub GraphQL API (year contributions) failed', [
@@ -437,23 +468,28 @@ class GitHubService
         });
     }
 
+    /**
+     * Cache a rendered SVG card while tracking its (parameter dependent) cache
+     * key so it can later be invalidated by refreshCache().
+     */
+    public function rememberSvg(string $key, callable $callback): string
+    {
+        $this->registerSvgKey($key);
+
+        return Cache::remember($key, $this->svgTtl, $callback);
+    }
+
     public function refreshCache(): void
     {
+        // Drop the request-scoped memo so the re-warm below fetches fresh data.
+        $this->userData = null;
+
         Cache::forget('github:user_stats');
         Cache::forget('github:languages');
         Cache::forget('github:streak');
         Cache::forget('github:trophies');
 
-        // Flush all SVG caches
-        $themes = app(ThemeService::class)->availableThemes();
-        $cards = ['stats', 'langs', 'streak', 'trophies'];
-
-        foreach ($cards as $card) {
-            foreach ($themes as $theme) {
-                Cache::forget("github:svg:{$card}:{$theme}");
-            }
-            Cache::forget("github:svg:{$card}:custom");
-        }
+        $this->forgetSvgCache();
 
         // Re-warm the data cache
         $this->getStats();
@@ -462,5 +498,35 @@ class GitHubService
         $this->getTrophies();
 
         Cache::put('github:last_refresh', now()->toIso8601String(), $this->dataTtl);
+    }
+
+    /**
+     * Track an SVG cache key in the shared index.
+     */
+    protected function registerSvgKey(string $key): void
+    {
+        /** @var array<int, string> $keys */
+        $keys = Cache::get(self::SVG_INDEX_KEY, []);
+
+        if (! in_array($key, $keys, true)) {
+            $keys[] = $key;
+            // Keep the index alive at least as long as any SVG entry.
+            Cache::put(self::SVG_INDEX_KEY, $keys, max($this->dataTtl, $this->svgTtl));
+        }
+    }
+
+    /**
+     * Forget every tracked SVG cache entry and clear the index.
+     */
+    protected function forgetSvgCache(): void
+    {
+        /** @var array<int, string> $keys */
+        $keys = Cache::get(self::SVG_INDEX_KEY, []);
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
+
+        Cache::forget(self::SVG_INDEX_KEY);
     }
 }

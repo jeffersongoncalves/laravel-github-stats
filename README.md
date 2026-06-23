@@ -46,6 +46,12 @@ Add to your `.env`:
 ```env
 GITHUB_USERNAME=jeffersongoncalves
 GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+
+# Optional overrides (defaults shown)
+GITHUB_STATS_DATA_TTL=14400
+GITHUB_STATS_SVG_TTL=3600
+GITHUB_STATS_THEME=tokyonight
+GITHUB_STATS_ROUTE_PREFIX=api
 ```
 
 Create a [Personal Access Token](https://github.com/settings/tokens/new) with `read:user` scope. Add `repo` scope if you want private repository stats.
@@ -87,14 +93,18 @@ return [
 
 ### Query Parameters
 
-| Param | Default | Options |
-|:------|:--------|:--------|
-| `theme` | `tokyonight` | `dark`, `radical`, `merko`, `gruvbox`, `onedark`, `tokyonight` |
-| `hide_border` | `false` | `true`, `false` |
-| `bg_color` | per theme | Any hex (without `#`) |
-| `title_color` | per theme | Any hex |
-| `text_color` | per theme | Any hex |
-| `icon_color` | per theme | Any hex |
+| Param | Default | Options | Applies to |
+|:------|:--------|:--------|:-----------|
+| `theme` | `tokyonight` | `dark`, `radical`, `merko`, `gruvbox`, `onedark`, `tokyonight` | all cards |
+| `hide_border` | `false` | `true`, `false` | all cards |
+| `bg_color` | per theme | Any hex (without `#`) | all cards |
+| `title_color` | per theme | Any hex | all cards |
+| `text_color` | per theme | Any hex | all cards |
+| `icon_color` | per theme | Any hex | all cards |
+| `border_color` | per theme | Any hex | all cards |
+| `column` | auto | `1`–`10` | `/api/trophies` |
+| `no_frame` | `false` | `true`, `false` | `/api/trophies` |
+| `no_bg` | `false` | `true`, `false` | `/api/trophies` |
 
 ## Usage in GitHub README
 
