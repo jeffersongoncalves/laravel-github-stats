@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.5.0...HEAD)
+## [Unreleased](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.5.1...HEAD)
 
 ## [1.0.0](https://github.com/jeffersongoncalves/laravel-github-stats/releases/tag/v1.0.0) - 2026-02-27
 
@@ -22,6 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom color overrides via query parameters
 - Username lock middleware for security
 - Scheduled cache refresh command (`github:refresh`)
+
+## [v1.5.1](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.5.0...v1.5.1) - 2026-10-28
+
+### Fixes
+
+- Retry transient GitHub GraphQL failures (5xx and connection errors) with backoff; 4xx (bad token, rate limit) still fail fast. (#10, #11)
+- Yearly contribution/commit loops stop after an exhausted 5xx retry instead of paying the backoff once per year.
+- Error logs cap the response body at 500 chars, so GitHub's HTML error pages no longer flood the log.
+
+### New config
+
+`github-stats.retry.times` (default `3`) and `github-stats.retry.sleep` (ms, default `2000`), via `GITHUB_STATS_RETRY_TIMES` / `GITHUB_STATS_RETRY_SLEEP`. Republish the config or add the keys manually; defaults apply when absent.
+
+**Full Changelog**: https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.5.0...v1.5.1
 
 ## [v1.5.0](https://github.com/jeffersongoncalves/laravel-github-stats/compare/v1.4.1...v1.5.0) - 2026-06-21
 
