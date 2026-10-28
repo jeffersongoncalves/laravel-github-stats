@@ -40,6 +40,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Retry
+    |--------------------------------------------------------------------------
+    |
+    | Transient GitHub failures (5xx, connection errors) are retried. 4xx
+    | responses (bad token, rate limit) are never retried.
+    |
+    | times: Total attempts per request (default: 3)
+    | sleep: Milliseconds to wait between attempts (default: 2000)
+    |
+    */
+    'retry' => [
+        'times' => (int) env('GITHUB_STATS_RETRY_TIMES', 3),
+        'sleep' => (int) env('GITHUB_STATS_RETRY_SLEEP', 2000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | GitHub API URLs
     |--------------------------------------------------------------------------
     */
