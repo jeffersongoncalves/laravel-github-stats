@@ -149,6 +149,18 @@ it('aggregates commit contributions across multiple years', function () {
     expect($total)->toBe(300);
 });
 
+it('stops the yearly loop once retries are exhausted on a 5xx', function () {
+    Http::fake([
+        'api.github.com/graphql' => Http::response('<html>Unicorn</html>', 502),
+    ]);
+
+    $total = app(GitHubService::class)->fetchAllTimeCommits('2024-01-01T00:00:00Z');
+
+    // One year's 3 attempts, not 3 attempts for each of 2024, 2025, 2026.
+    expect($total)->toBe(0);
+    Http::assertSentCount(3);
+});
+
 it('memoizes the user payload so it is only fetched once on a cold cache', function () {
     Http::fake([
         'api.github.com/graphql' => function ($request) {

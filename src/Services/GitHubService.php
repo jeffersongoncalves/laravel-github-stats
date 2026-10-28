@@ -204,6 +204,11 @@ class GitHubService
                     'status' => $response->status(),
                 ]);
 
+                // Retries already exhausted on a 5xx; don't pay the backoff again per year.
+                if ($response->serverError()) {
+                    break;
+                }
+
                 continue;
             }
 
@@ -337,6 +342,11 @@ class GitHubService
                     'year' => $year,
                     'status' => $response->status(),
                 ]);
+
+                // Retries already exhausted on a 5xx; don't pay the backoff again per year.
+                if ($response->serverError()) {
+                    break;
+                }
 
                 continue;
             }
