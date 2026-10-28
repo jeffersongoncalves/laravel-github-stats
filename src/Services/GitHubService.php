@@ -3,9 +3,13 @@
 namespace JeffersonGoncalves\GitHubStats\Services;
 
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GitHubService
 {
@@ -111,19 +115,16 @@ class GitHubService
         GRAPHQL;
 
         do {
-            $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, [
-                    'query' => $query,
-                    'variables' => [
-                        'login' => $this->username,
-                        'cursor' => $cursor,
-                    ],
-                ]);
+            $response = $this->graphql($query, [
+                'login' => $this->username,
+                'cursor' => $cursor,
+            ]);
 
             if ($response->failed()) {
+                // 5xx bodies are full HTML pages with inline images; keep the log readable.
                 Log::error('GitHub GraphQL API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body(),
+                    'body' => Str::limit($response->body(), 500),
                 ]);
 
                 throw new \RuntimeException('GitHub API request failed: '.$response->status());
@@ -191,15 +192,11 @@ class GitHubService
         GRAPHQL;
 
         for ($year = $startYear; $year <= $currentYear; $year++) {
-            $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, [
-                    'query' => $query,
-                    'variables' => [
-                        'login' => $this->username,
-                        'from' => "{$year}-01-01T00:00:00Z",
-                        'to' => "{$year}-12-31T23:59:59Z",
-                    ],
-                ]);
+            $response = $this->graphql($query, [
+                'login' => $this->username,
+                'from' => "{$year}-01-01T00:00:00Z",
+                'to' => "{$year}-12-31T23:59:59Z",
+            ]);
 
             if ($response->failed()) {
                 Log::warning('GitHub GraphQL API (all-time commits) failed', [
@@ -329,15 +326,11 @@ class GitHubService
         GRAPHQL;
 
         for ($year = $startYear; $year <= $currentYear; $year++) {
-            $response = Http::withToken($this->token)
-                ->post($this->graphqlUrl, [
-                    'query' => $query,
-                    'variables' => [
-                        'login' => $this->username,
-                        'from' => "{$year}-01-01T00:00:00Z",
-                        'to' => "{$year}-12-31T23:59:59Z",
-                    ],
-                ]);
+            $response = $this->graphql($query, [
+                'login' => $this->username,
+                'from' => "{$year}-01-01T00:00:00Z",
+                'to' => "{$year}-12-31T23:59:59Z",
+            ]);
 
             if ($response->failed()) {
                 Log::warning('GitHub GraphQL API (year contributions) failed', [
@@ -498,6 +491,28 @@ class GitHubService
         $this->getTrophies();
 
         Cache::put('github:last_refresh', now()->toIso8601String(), $this->dataTtl);
+    }
+
+    /**
+     * POST a GraphQL query, retrying only transient failures (5xx and
+     * connection errors). 4xx (bad token, rate limit) fail fast.
+     *
+     * @param  array<string, mixed>  $variables
+     */
+    protected function graphql(string $query, array $variables): Response
+    {
+        return Http::withToken($this->token)
+            ->retry(
+                (int) config('github-stats.retry.times', 3),
+                (int) config('github-stats.retry.sleep', 2000),
+                fn ($e) => $e instanceof ConnectionException
+                    || ($e instanceof RequestException && $e->response->serverError()),
+                throw: false,
+            )
+            ->post($this->graphqlUrl, [
+                'query' => $query,
+                'variables' => $variables,
+            ]);
     }
 
     /**

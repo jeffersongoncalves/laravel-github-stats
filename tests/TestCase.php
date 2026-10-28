@@ -20,5 +20,6 @@ class TestCase extends Orchestra
         $app['config']->set('github-stats.token', 'fake-token');
         $app['config']->set('github-stats.cache.data_ttl', 60);
         $app['config']->set('github-stats.cache.svg_ttl', 30);
+        $app['config']->set('github-stats.retry.sleep', 0);
     }
 }

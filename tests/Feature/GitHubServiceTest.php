@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use JeffersonGoncalves\GitHubStats\Services\GitHubService;
 use Symfony\Component\Console\Command\Command;
 
@@ -73,6 +74,42 @@ it('throws a RuntimeException when the GitHub API request fails', function () {
 
     app(GitHubService::class)->fetchUserData();
 })->throws(RuntimeException::class);
+
+it('retries a transient 5xx and returns data once GitHub recovers', function () {
+    Http::fake([
+        'api.github.com/graphql' => Http::sequence()
+            ->push('<html>Unicorn</html>', 504)
+            ->push(ghRepoPage([ghRepoNode('repo-1', 100)], false, null)),
+    ]);
+
+    $data = app(GitHubService::class)->fetchUserData();
+
+    expect($data['repos'])->toHaveCount(1);
+    Http::assertSentCount(2);
+});
+
+it('does not retry client errors', function () {
+    Http::fake([
+        'api.github.com/graphql' => Http::response(['message' => 'Forbidden'], 403),
+    ]);
+
+    expect(fn () => app(GitHubService::class)->fetchUserData())->toThrow(RuntimeException::class);
+    Http::assertSentCount(1);
+});
+
+it('caps the response body written to the error log', function () {
+    Log::spy();
+    Http::fake([
+        'api.github.com/graphql' => Http::response(str_repeat('x', 5000), 502),
+    ]);
+
+    expect(fn () => app(GitHubService::class)->fetchUserData())->toThrow(RuntimeException::class);
+
+    Http::assertSentCount(3);
+    Log::shouldHaveReceived('error')->withArgs(
+        fn ($message, $context) => strlen($context['body']) <= 503
+    )->once();
+});
 
 it('throws a RuntimeException when the user payload is null', function () {
     Http::fake([
